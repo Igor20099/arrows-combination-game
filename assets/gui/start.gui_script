@@ -1,0 +1,16 @@
+function init(self)
+	msg.post(".", "acquire_input_focus")
+end
+
+
+function on_input(self, action_id, action)
+	local my_node = gui.get_node("start")
+	if gui.pick_node(my_node, action.x, action.y) and action.released and action_id == hash("touch") then
+		msg.post('.','release_input_focus')
+		msg.post('board#board', 'start_game')
+		gui.set_enabled(my_node, false)
+		gui.set_enabled(gui.get_node('dsf'), false)
+		
+	end
+end
+

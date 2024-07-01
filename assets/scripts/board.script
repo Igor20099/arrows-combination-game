@@ -1,0 +1,164 @@
+local pos_x = 1024/4 + 28
+local pos_y = 620
+local time = 60
+
+function init(self)
+	go.set('timer#plus_time', 'color.w', 0)
+	msg.post("@render:", "use_fixed_fit_projection", { near = -300, far = 300 })
+	msg.post('timer#time', 'disable')
+	msg.post('timer#label', 'disable')
+	self.board = {}
+	self.arrows = {}
+	self.cells = 0
+	self.current_cell = 1
+	self.comb = 0
+	self.pressed_key = nil
+	self.ids = {}
+	self.time = 60
+	for i=1,4 do
+		for j = 1,4 do
+			local cell = factory.create('#factory',vmath.vector3(pos_x, pos_y, -0.3))
+			table.insert(self.board, cell)
+			pos_x= pos_x + 150
+		end
+		pos_x = 1024/4 + 28
+		pos_y= pos_y - 150
+
+	end
+
+	
+	
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash('start_game') then
+		msg.post('timer#time', 'enable')
+		msg.post('timer#label', 'enable')
+		msg.post(".", "acquire_input_focus")
+
+		self.handle = timer.delay(1, true, function()
+			self.time = self.time - 1 
+			label.set_text('timer#time','Время: '..self.time) 
+			
+		end)
+
+	 end
+	if message_id == hash('add_arrow') then
+		table.insert(self.arrows, message.arrow)
+		table.insert(self.ids, message.id)
+	end
+end
+
+function on_input(self, action_id, action)
+	if  action.pressed and self.current_cell <= #self.board then
+		
+		if action_id == hash('key_up') then
+			self.pressed_key = 'up'
+		elseif action_id == hash('key_right') then
+			self.pressed_key = 'right'
+		elseif action_id == hash('key_left') then
+			self.pressed_key = 'left'
+		elseif action_id == hash('key_down') then
+			self.pressed_key = 'down'		
+		end
+
+		if self.pressed_key then
+			
+			if self.pressed_key == self.arrows[self.current_cell] then
+				local cell = self.board[self.current_cell]
+				local blue = msg.url('main',cell,'blue')
+				local green = msg.url('main',cell,'green')
+				msg.post(blue, 'disable')
+				msg.post(green, 'enable')
+				if self.cells < 15 then
+					sound.play('#click')
+				end
+			
+				self.current_cell = self.current_cell + 1
+				self.pressed_key = nil
+				self.cells = self.cells + 1
+				
+				if self.cells == 16 then
+					sound.play('#beep')
+					self.comb = self.comb + 1
+					label.set_text('timer#label', 'Всего комбинаций: '..self.comb)
+					self.time = self.time + 15
+					go.set('timer#plus_time', 'color.w', 1)
+					go.animate('timer#plus_time', 'color.w', go.PLAYBACK_ONCE_FORWARD, 0, go.EASING_LINEAR, 1)
+					
+					
+					timer.delay(0.5, false, function() for i, el in ipairs(self.board) do
+						local blue = msg.url('main',el,'blue')
+						local green = msg.url('main',el,'green')
+						msg.post(blue, 'enable')
+						msg.post(green, 'disable')
+					end
+						self.current_cell = 1
+						self.cells = 0
+						self.arrows = {}
+						self.ids = {}
+						for i,el in ipairs(self.board) do
+							local arrow = msg.url('main',el,'cell')
+							msg.post(arrow, 'new_arrow')
+						end
+						go.animate('timer#plus_time', 'color.w', go.PLAYBACK_ONCE_FORWARD, 0, go.EASING_LINEAR, 1)
+						end)				
+				end
+			else
+				local cell = self.board[self.current_cell]
+				local blue = msg.url('main',cell,'blue')
+				local red = msg.url('main',cell,'red')
+				msg.post(blue, 'disable')
+				msg.post(red, 'enable')
+				-- msg.post('.', 'release_input_focus')
+				sound.play('#cancel')
+				timer.cancel(self.handle)
+				for _, el in ipairs(self.board) do
+					local cell = msg.url('main',el,'')
+					msg.post(cell, 'disable')
+				end
+
+				for _, el in ipairs(self.ids) do
+					go.delete(el)
+				end
+
+				
+				msg.post('timer', 'disable')
+				msg.post('end#end', 'enable')
+				msg.post('end#end', 'end_game',{comb = self.comb})
+			end
+		end
+
+		
+	end
+end
+
+function update(self, dt)
+	if self.time == 0 then
+		self.time = -1
+		local cell = self.board[self.current_cell]
+		local blue = msg.url('main',cell,'blue')
+		local red = msg.url('main',cell,'red')
+		msg.post(blue, 'disable')
+		msg.post(red, 'enable')
+		-- msg.post('.', 'release_input_focus')
+		sound.play('#cancel')
+		timer.cancel(self.handle)
+		for _, el in ipairs(self.board) do
+			local cell = msg.url('main',el,'')
+			msg.post(cell, 'disable')
+		end
+
+		for _, el in ipairs(self.ids) do
+			go.delete(el)
+		end
+
+
+		msg.post('timer', 'disable')
+		msg.post('end#end', 'enable')
+		msg.post('end#end', 'end_game',{comb = self.comb})
+		
+	end
+	
+
+end

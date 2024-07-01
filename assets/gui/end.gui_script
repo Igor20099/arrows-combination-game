@@ -1,0 +1,19 @@
+function init(self)
+	msg.post('.', 'disable')
+	msg.post(".", "acquire_input_focus")
+end
+
+
+function on_input(self, action_id, action)
+	local my_node = gui.get_node("restart")
+	if gui.pick_node(my_node, action.x, action.y) and action.released and action_id == hash("touch") then
+		msg.post('scene_manager:/restart#scene_manager', 'restart_game')
+	end
+end
+
+function on_message(self, message_id, message) 
+
+	if message_id == hash('end_game') then
+		gui.set_text(gui.get_node('text1'),tostring(message.comb))
+	end
+end

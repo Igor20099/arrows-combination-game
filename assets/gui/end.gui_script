@@ -1,4 +1,10 @@
+local defsave = require("defsave.defsave")
+
+local ya_scores = require("assets.scripts.yandex.ya_leaderboards")
+
 function init(self)
+	defsave.appname = "hell_codes"
+	defsave.load("scores")
 	msg.post('.', 'disable')
 	msg.post(".", "acquire_input_focus")
 end
@@ -14,6 +20,15 @@ end
 function on_message(self, message_id, message) 
 
 	if message_id == hash('end_game') then
+		local best_record = defsave.get('scores', 'record') or 0
+		if message.comb > best_record then
+			best_record = message.comb
+			defsave.set('scores','record',message.comb)
+			defsave.save("scores")
+		end
 		gui.set_text(gui.get_node('text1'),tostring(message.comb))
+		gui.set_text(gui.get_node('record'), best_record)
+		ya_scores.set_score_handler(self, best_record)
+	
 	end
 end

@@ -1,10 +1,15 @@
 local yagames = require("yagames.yagames")
 
+local ya_scores = require("assets.scripts.yandex.ya_leaderboards")
+
 local function init_handler(self, err)
 	if err then
 		print("Something went wrong:", err)
 	end
+	yagames.features_loadingapi_ready()
+	ya_scores.init_handler()
 	msg.post('/ya#ya', "show_fullscreen_adv")
+
 end
 
 function init(self)
